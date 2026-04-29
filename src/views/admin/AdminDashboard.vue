@@ -748,7 +748,10 @@ export default {
       }
 
       // Validaciones cruzadas
-      if (this.form.horaInicio && this.form.horaFin && this.form.horaInicio >= this.form.horaFin)
+      // Normalizar HH:MM → HH:MM:SS antes de comparar (el input type="time" devuelve sin segundos)
+      const normTime = t => t && /^\d{2}:\d{2}$/.test(t) ? t + ':00' : t;
+      if (this.form.horaInicio && this.form.horaFin &&
+          normTime(this.form.horaInicio) >= normTime(this.form.horaFin))
         errors['horaFin'] = 'La hora fin debe ser posterior a la hora inicio.';
 
       if (this.form.rating !== '' && this.form.rating !== undefined) {
@@ -783,6 +786,11 @@ export default {
         if (val === '' && !field.required) val = null;
         if ((field.type === 'number' || field.type === 'relselect') && val !== null && val !== '')
           val = Number(val);
+        // El backend espera System.TimeOnly en formato HH:MM:SS.
+        // El <input type="time"> devuelve HH:MM (sin segundos), así que añadimos ":00".
+        if (field.type === 'time' && val && typeof val === 'string') {
+          val = /^\d{2}:\d{2}$/.test(val) ? val + ':00' : val;
+        }
         body[field.name] = val;
       });
       if (this.editing?.id) body.id = this.editing.id;
